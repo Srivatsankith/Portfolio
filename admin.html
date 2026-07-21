@@ -1,0 +1,420 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Admin Portal - Srivatsankith Portfolio</title>
+
+  <meta
+    name="description"
+    content="Admin Portal for managing portfolio content"
+  />
+
+  <link rel="stylesheet" href="css/style.css" />
+  <style>
+    /* Admin-specific styles */
+    .admin-header {
+      background: linear-gradient(135deg, #0a0a0a 0%, #1a1a2e 50%, #16213e 100%);
+      padding: 2rem 0;
+      text-align: center;
+      border-bottom: 1px solid #00d4ff;
+    }
+
+    .admin-header h1 {
+      color: #00d4ff;
+      font-size: 2.5rem;
+      margin-bottom: 0.5rem;
+    }
+
+    .admin-header p {
+      color: #b0b0b0;
+      font-size: 1.1rem;
+    }
+
+    .logout-btn {
+      position: fixed;
+      top: 20px;
+      right: 20px;
+      background: #ff4444;
+      color: white;
+      border: none;
+      padding: 10px 20px;
+      border-radius: 5px;
+      cursor: pointer;
+      font-size: 14px;
+      z-index: 1000;
+    }
+
+    .logout-btn:hover {
+      background: #cc3333;
+    }
+
+    /* Modal styles */
+    .modal {
+      display: none;
+      position: fixed;
+      z-index: 2000;
+      left: 0;
+      top: 0;
+      width: 100%;
+      height: 100%;
+      background-color: rgba(0, 0, 0, 0.8);
+      backdrop-filter: blur(5px);
+    }
+
+    .modal-content {
+      background: linear-gradient(135deg, #0a0a0a 0%, #1a1a2e 100%);
+      margin: 15% auto;
+      padding: 2rem;
+      border: 1px solid #00d4ff;
+      border-radius: 10px;
+      width: 90%;
+      max-width: 400px;
+      box-shadow: 0 0 20px rgba(0, 212, 255, 0.3);
+    }
+
+    .modal-content h2 {
+      color: #00d4ff;
+      text-align: center;
+      margin-bottom: 1.5rem;
+    }
+
+    .form-field {
+      margin-bottom: 1rem;
+    }
+
+    .form-field label {
+      display: block;
+      color: #b0b0b0;
+      margin-bottom: 0.5rem;
+      font-size: 14px;
+    }
+
+    .form-field input,
+    .form-field textarea,
+    .form-field select {
+      width: 100%;
+      padding: 12px;
+      background: rgba(255, 255, 255, 0.1);
+      border: 1px solid #00d4ff;
+      border-radius: 5px;
+      color: white;
+      font-size: 16px;
+    }
+
+    .form-field textarea {
+      min-height: 120px;
+      resize: vertical;
+      font-family: inherit;
+      line-height: 1.5;
+    }
+
+    .form-field select option {
+      color: #000;
+    }
+
+    .form-field input:focus,
+    .form-field textarea:focus,
+    .form-field select:focus {
+      outline: none;
+      box-shadow: 0 0 10px rgba(0, 212, 255, 0.5);
+    }
+
+    .modal-actions {
+      text-align: center;
+      margin-top: 1.5rem;
+    }
+
+    .btn {
+      padding: 12px 24px;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+      font-size: 16px;
+      margin: 0 10px;
+      transition: all 0.3s ease;
+    }
+
+    .btn.primary {
+      background: #00d4ff;
+      color: #000;
+    }
+
+    .btn.primary:hover {
+      background: #00a8cc;
+    }
+
+    .btn.secondary {
+      background: transparent;
+      color: #b0b0b0;
+      border: 1px solid #b0b0b0;
+    }
+
+    .btn.secondary:hover {
+      background: #b0b0b0;
+      color: #000;
+    }
+
+    .admin-layout {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 2rem;
+      padding: 2rem;
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+
+    .admin-form {
+      background: rgba(255, 255, 255, 0.05);
+      padding: 2rem;
+      border-radius: 10px;
+      border: 1px solid #00d4ff;
+    }
+
+    .admin-form h3 {
+      color: #00d4ff;
+      margin-bottom: 1.5rem;
+    }
+
+    .form-actions {
+      display: flex;
+      gap: 1rem;
+      margin-top: 1.5rem;
+    }
+
+    .admin-project-list {
+      background: rgba(255, 255, 255, 0.05);
+      padding: 2rem;
+      border-radius: 10px;
+      border: 1px solid #00d4ff;
+    }
+
+    .admin-project-list h3 {
+      color: #00d4ff;
+      margin-bottom: 1.5rem;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+      gap: 1.5rem;
+    }
+
+    .project-card {
+      background: rgba(255, 255, 255, 0.05);
+      padding: 1.5rem;
+      border-radius: 8px;
+      border: 1px solid #333;
+      transition: all 0.3s ease;
+    }
+
+    .project-card:hover {
+      border-color: #00d4ff;
+      box-shadow: 0 0 10px rgba(0, 212, 255, 0.2);
+    }
+
+    .project-card h4 {
+      color: #00d4ff;
+      margin-bottom: 0.5rem;
+    }
+
+    .project-meta {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+      margin-bottom: 1rem;
+    }
+
+    .project-meta span {
+      background: rgba(0, 212, 255, 0.2);
+      color: #00d4ff;
+      padding: 0.25rem 0.5rem;
+      border-radius: 3px;
+      font-size: 12px;
+    }
+
+    .project-actions {
+      display: flex;
+      gap: 0.5rem;
+      margin-top: 1rem;
+    }
+
+    .conditional-fields {
+      display: none;
+    }
+
+    .conditional-fields.active {
+      display: block;
+    }
+
+    @media (max-width: 768px) {
+      .admin-layout {
+        grid-template-columns: 1fr;
+      }
+
+      .admin-header h1 {
+        font-size: 2rem;
+      }
+    }
+  </style>
+</head>
+
+<body class="dark">
+  <div class="matrix-bg"></div>
+  <div class="cyber-grid"></div>
+
+  <!-- Login Modal -->
+  <div id="loginModal" class="modal">
+    <div class="modal-content">
+      <h2>Admin Login</h2>
+      <form id="loginForm">
+        <div class="form-field">
+          <label for="username">Username</label>
+          <input type="text" id="username" name="username" required />
+        </div>
+        <div class="form-field">
+          <label for="password">Password</label>
+          <input type="password" id="password" name="password" required />
+        </div>
+        <div class="modal-actions">
+          <button type="submit" class="btn primary">Login</button>
+          <button type="button" id="cancelLogin" class="btn secondary">Cancel</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Admin Header -->
+  <header class="admin-header">
+    <h1>Admin Portal</h1>
+    <p>Manage project content without editing source files</p>
+  </header>
+
+  <!-- Logout Button -->
+  <button id="logoutBtn" class="logout-btn">Logout</button>
+
+  <main class="admin-layout">
+    <form id="contentForm" class="admin-form">
+      <h3 id="contentFormTitle">Add Section Item</h3>
+
+      <div class="form-field">
+        <label for="contentType">Section</label>
+        <select id="contentType" name="contentType">
+          <option value="profile">Profile</option>
+          <option value="project">Projects</option>
+          <option value="hackathon">Hackathons</option>
+          <option value="activity">Activities</option>
+          <option value="work-experience">Work Experience</option>
+        </select>
+      </div>
+
+      <div class="form-field">
+        <label for="contentTitle">Title</label>
+        <input type="text" id="contentTitle" name="contentTitle" placeholder="Item title" required />
+      </div>
+
+      <div class="form-field">
+        <label for="contentDescription">Description</label>
+        <textarea id="contentDescription" name="contentDescription" placeholder="Item description" rows="4" required></textarea>
+      </div>
+
+      <div id="projectFields" class="conditional-fields active">
+        <div class="form-field">
+          <label for="contentSubtitle">Subtitle</label>
+          <input type="text" id="contentSubtitle" name="contentSubtitle" placeholder="A short, catchy subtitle" />
+        </div>
+
+        <div class="form-field">
+          <label for="contentCategory">Category</label>
+          <input type="text" id="contentCategory" name="contentCategory" list="category-suggestions" placeholder="e.g., AI/ML, Full Stack" />
+          <datalist id="category-suggestions">
+            <option value="AI/ML"></option>
+            <option value="Full Stack"></option>
+            <option value="Computer Vision"></option>
+            <option value="NLP"></option>
+            <option value="Generative AI"></option>
+            <option value="Data Science"></option>
+            <option value="Cloud"></option>
+            <option value="Mobile"></option>
+            <option value="Cyber Security"></option>
+          </datalist>
+        </div>
+
+        <div class="form-field">
+          <label for="contentTechStack">Tech Stack (comma-separated)</label>
+          <input type="text" id="contentTechStack" name="contentTechStack" placeholder="React, Node.js, MongoDB" />
+        </div>
+
+        <div class="form-field">
+          <label for="contentHighlights">Highlights (comma-separated)</label>
+          <input type="text" id="contentHighlights" name="contentHighlights" placeholder="Semantic Search, Knowledge Graph" />
+        </div>
+
+        <div class="form-field">
+          <label for="contentMetrics">Metrics (comma-separated)</label>
+          <input type="text" id="contentMetrics" name="contentMetrics" placeholder="🎯 89% Accuracy, ⚡ Real-time" />
+        </div>
+
+        <div class="form-field">
+          <label for="contentGithubUrl">GitHub URL</label>
+          <input type="url" id="contentGithubUrl" name="contentGithubUrl" placeholder="https://github.com/..." />
+        </div>
+
+        <div class="form-field">
+          <label for="contentLiveUrl">Live Demo URL</label>
+          <input type="url" id="contentLiveUrl" name="contentLiveUrl" placeholder="https://..." />
+        </div>
+
+        <div class="form-field">
+          <label for="contentYear">Year</label>
+          <input type="number" id="contentYear" name="contentYear" placeholder="2024" />
+        </div>
+
+        <div class="form-field">
+          <label for="contentImage">Project Image</label>
+          <input type="file" id="contentImage" name="contentImage" accept="image/*" />
+        </div>
+
+        <div class="form-field">
+          <label for="contentFeatured">Featured Project</label>
+          <input type="checkbox" id="contentFeatured" name="contentFeatured" />
+        </div>
+      </div>
+
+      <div id="profileFields" class="conditional-fields">
+        <div class="form-field">
+          <label for="profileImage">Profile Photo</label>
+          <input type="file" id="profileImage" name="profileImage" accept="image/*" />
+          <img id="profileImagePreview" alt="Current Profile Photo" style="max-width: 150px; border-radius: 8px; margin-top: 10px; display: none;" />
+        </div>
+        <div class="form-field">
+          <label for="profileImageUrl">Profile Photo URL</label>
+          <input type="url" id="profileImageUrl" name="profileImageUrl" placeholder="https://example.com/photo.jpg" />
+        </div>
+      </div>
+
+      <div id="contentOrderField" class="form-field">
+        <label for="contentOrder">Display Order</label>
+        <input type="number" id="contentOrder" name="contentOrder" placeholder="1, 2, 3..." min="1" />
+      </div>
+
+      <div id="workExperienceFields" class="conditional-fields">
+        <label for="contentSkills">Skills Learned (comma-separated)</label>
+        <input type="text" id="contentSkills" name="contentSkills" placeholder="Python, Scikit-learn, Teamwork" />
+      </div>
+
+      <div class="form-actions">
+        <button type="submit" class="btn primary">Save Item</button>
+        <button type="button" id="resetContentForm" class="btn secondary">Reset Form</button>
+      </div>
+    </form>
+
+    <div class="admin-project-list">
+      <h3 id="contentListTitle">Projects</h3>
+      <div id="adminContentCards" class="grid"></div>
+    </div>
+  </main>
+
+  <script src="js/admin-dashboard.js"></script>
+</body>
+</html>
