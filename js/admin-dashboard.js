@@ -377,11 +377,9 @@ function prepareContentForm(item) {
 
   document.getElementById("contentTitle").value = item.title || "";
   document.getElementById("contentDescription").value = item.description || "";
-  document.getElementById("contentSubtitle").value = item.subtitle || "";
   document.getElementById("contentCategory").value = item.category || "";
   document.getElementById("contentYear").value = item.year || "";
   document.getElementById("contentTechStack").value = (item.techStack || []).join(", ");
-  document.getElementById("contentHighlights").value = (item.highlights || []).join(", ");
   document.getElementById("contentMetrics").value = (item.metrics || []).join(", ");
   document.getElementById("contentGithubUrl").value = item.githubUrl || "";
   document.getElementById("contentLiveUrl").value = item.liveUrl || "";
@@ -473,11 +471,9 @@ async function buildProjectPayload(title, description) {
   return {
     title,
     description,
-    subtitle: document.getElementById("contentSubtitle").value.trim(),
     category: document.getElementById("contentCategory").value.trim(),
-    year: document.getElementById("contentYear").value.trim(),
+    year: Number(document.getElementById("contentYear").value) || null,
     techStack: toArray(document.getElementById("contentTechStack").value),
-    highlights: toArray(document.getElementById("contentHighlights").value),
     metrics: toArray(document.getElementById("contentMetrics").value),
     githubUrl: document.getElementById("contentGithubUrl").value.trim(),
     liveUrl: document.getElementById("contentLiveUrl").value.trim(),

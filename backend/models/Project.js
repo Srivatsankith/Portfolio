@@ -2,12 +2,10 @@ const mongoose = require("mongoose");
 
 const projectSchema = new mongoose.Schema(
   {
-    title: { type: String, required: true },
-    subtitle: { type: String },
+    title: { type: String, required: true },    
     description: { type: String, required: true },
     image: { type: String },
     techStack: [{ type: String }],
-    highlights: [{ type: String }],
     metrics: [{ type: String }],
     githubUrl: { type: String },
     liveUrl: { type: String },

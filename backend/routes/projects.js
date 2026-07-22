@@ -8,11 +8,9 @@ function serializeProject(project) {
   return {
     id: project._id.toString(),
     title: project.title,
-    subtitle: project.subtitle,
     description: project.description,
     image: project.image,
     techStack: project.techStack,
-    highlights: project.highlights,
     metrics: project.metrics,
     githubUrl: project.githubUrl,
     liveUrl: project.liveUrl,
@@ -28,10 +26,8 @@ function serializeProject(project) {
 function buildProjectData(body) {
   const data = {
     title: body.title,
-    subtitle: body.subtitle,
     description: body.description,
     techStack: body.techStack || [],
-    highlights: body.highlights || [],
     metrics: body.metrics || [],
     githubUrl: body.githubUrl,
     liveUrl: body.liveUrl,
