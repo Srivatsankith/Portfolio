@@ -478,6 +478,7 @@ async function buildProjectPayload(title, description) {
     metrics: toArray(document.getElementById("contentMetrics").value),
     githubUrl: document.getElementById("contentGithubUrl").value.trim(),
     liveUrl: document.getElementById("contentLiveUrl").value.trim(),
+    videoUrl: document.getElementById("videoUrl")?.value.trim() || "", // This field was missing
     featured: document.getElementById("contentFeatured").checked,
     image
   };
