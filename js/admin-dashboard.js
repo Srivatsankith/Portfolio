@@ -290,6 +290,7 @@ function createCardMarkup(item, config) {
         </div>
         <div class="project-actions">
           <button type="button" class="btn secondary" data-action="edit" data-id="${item.id}">Edit</button>
+          <button type="button" class="btn secondary" data-action="delete" data-id="${item.id}">Delete</button>
         </div>
       </div>
     `;
@@ -514,7 +515,8 @@ async function uploadProjectImage(file) {
 
 async function deleteContentItem(id) {
   const config = contentConfig[currentContentType];
-  if (!confirm(`Delete this ${config.singular.toLowerCase()}?`)) {
+  const itemName = currentContentType === "profile" ? "home card" : config.singular.toLowerCase();
+  if (!confirm(`Delete this ${itemName}?`)) {
     return;
   }
 
