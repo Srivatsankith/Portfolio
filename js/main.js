@@ -16,7 +16,7 @@ let isListening = false;
 let pendingSpeech = "";
 let lastTopic = "about";
 
-const API_BASE = "https://portfolio-backend-jkf3.onrender.com";
+const API_BASE = "https://portfolio-backend-jkf3.onrender.com/api";
 const API_ORIGIN = new URL(API_BASE).origin;
 
 function setMenuState(isOpen) {
@@ -534,7 +534,7 @@ function resolveMediaUrl(url) {
     return "";
   }
 
-  if (/^https?:\/\//i.test(url)) {
+  if (/^(https?:|data:image\/)/i.test(url)) {
     return url;
   }
 

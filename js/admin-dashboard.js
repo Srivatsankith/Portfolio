@@ -1,11 +1,11 @@
 const API_BASE = "https://portfolio-backend-jkf3.onrender.com/api";
-const API_ORIGIN = new URL(API_BASE).origin;
 const contentConfig = {
   profile: {
     singular: "Profile",
     plural: "Profile",
     endpoint: `${API_BASE}/content/profile`,
-    emptyText: "Use this section to update the home profile card."
+    emptyText: "Update your profile photo here.",
+    hasImage: true
   },
   project: {
     singular: "Project",
@@ -37,14 +37,9 @@ const contentConfig = {
 let currentContentType = "profile";
 let currentEditId = null;
 let currentEditImage = "";
+let croppedImageBlob = null;
+let cropper = null;
 let currentItems = [];
-let profileCropState = {
-  file: null,
-  objectUrl: "",
-  zoom: 1,
-  x: 0,
-  y: 0
-};
 
 document.addEventListener("DOMContentLoaded", () => {
   setupEventListeners();
@@ -70,10 +65,21 @@ function setupEventListeners() {
   document.getElementById("contentType")?.addEventListener("change", (event) => {
     applyContentType(event.target.value);
   });
-  document.getElementById("profileImage")?.addEventListener("change", handleSelectedProfileImage);
-  ["profileCropZoom", "profileCropX", "profileCropY"].forEach((id) => {
-    document.getElementById(id)?.addEventListener("input", updateProfileCropFromControls);
-  });
+
+  document.getElementById("contentImage")?.addEventListener("change", handleImageFileSelect);
+  document.getElementById("cropImageBtn")?.addEventListener("click", handleCrop);
+  document.getElementById("cancelCropBtn")?.addEventListener("click", cancelCrop);
+}
+
+function handleImageFileSelect(event) {
+  const file = event.target.files?.[0];
+  if (!file) return;
+
+  const reader = new FileReader();
+  reader.onload = (e) => {
+    openCropperModal(e.target.result);
+  };
+  reader.readAsDataURL(file);
 }
 
 function showLoginModal() {
@@ -175,40 +181,42 @@ function applyContentType(type) {
 function updateFormMode() {
   const isProject = currentContentType === "project";
   const isProfile = currentContentType === "profile";
-  const hasGithub = currentContentType === "project" || currentContentType === "internship";
+  const isWorkExperience = currentContentType === "work-experience";
+
   const titleLabel = document.querySelector("label[for='contentTitle']");
   const titleInput = document.getElementById("contentTitle");
   const descriptionField = document.getElementById("contentDescription")?.closest(".form-field");
   const descriptionInput = document.getElementById("contentDescription");
   const projectFields = document.getElementById("projectFields");
-  const yearField = document.getElementById("contentYear")?.closest(".form-field");
-  const profileFields = document.getElementById("profileFields");
+  const imageFieldWrapper = document.getElementById("contentOrderField"); // This div wraps the image uploader
   const workExperienceFields = document.getElementById("workExperienceFields");
-  const orderField = document.getElementById("contentOrderField");
+  const orderField = document.getElementById("sortOrderField");
 
-  if (titleLabel) {
-    titleLabel.textContent = isProfile ? "Profile Name" : "Title";
+  // --- Default States (Hide everything complex) ---
+  projectFields.style.display = "none";
+  imageFieldWrapper.style.display = "none";
+  workExperienceFields.style.display = "none";
+  orderField.style.display = "none";
+  descriptionField.style.display = "block";
+
+  // --- Configure based on type ---
+  titleLabel.textContent = isProfile ? "Profile Name" : "Title";
+  titleInput.placeholder = isProfile ? "Your Name" : "Item title";
+  titleInput.required = !isProfile; // Profile name can be optional, has a default
+
+  if (isProfile) {
+    descriptionField.style.display = "none";
+    imageFieldWrapper.style.display = "block";
+  } else if (isProject) {
+    projectFields.style.display = "block";
+    imageFieldWrapper.style.display = "block";
+  } else if (isWorkExperience) {
+    workExperienceFields.style.display = "block";
+    orderField.style.display = "block";
+  } else { // For hackathon, activity
+    orderField.style.display = "block";
   }
-  if (titleInput) {
-    titleInput.placeholder = isProfile ? "Your display name" : "Item title";
-  }
-  if (descriptionField) {
-    descriptionField.style.display = isProfile ? "none" : "block";
-  }
-  if (descriptionInput) {
-    descriptionInput.required = !isProfile;
-  }
-  projectFields?.classList.toggle("active", isProject);
-  if (yearField) {
-    yearField.style.display = isProject ? "block" : "none";
-  }
-  if (workExperienceFields) {
-    workExperienceFields.style.display = currentContentType === "work-experience" ? "block" : "none";
-  }
-  profileFields?.classList.toggle("active", isProfile);
-  if (orderField) {
-    orderField.style.display = (isProject || isProfile) ? "none" : "block";
-  }
+  updateImagePreview(""); // Clear preview on mode change
 }
 
 function resetContentForm() {
@@ -222,13 +230,9 @@ function resetContentForm() {
 
   currentEditId = null;
   currentEditImage = "";
-  resetProfileCropper();
-  const profileImagePreview = document.getElementById("profileImagePreview");
-  if (profileImagePreview) {
-    profileImagePreview.removeAttribute("src");
-    profileImagePreview.style.display = "none";
-  }
   updateFormMode();
+  croppedImageBlob = null;
+  updateImagePreview("");
 }
 
 async function loadContentItems() {
@@ -260,17 +264,26 @@ async function loadContentItems() {
       return;
     }
 
-    if (currentContentType === "profile") {
-      const profile = currentItems.find((item) => item.description) || currentItems[0];
-      currentEditId = profile.id;
-      currentEditImage = profile.description || "";
-      document.getElementById("contentTitle").value = profile.title || "";
-      showProfilePreview(currentEditImage);
-    }
-
     currentItems.forEach((item) => {
       container.innerHTML += createCardMarkup(item, config);
     });
+
+    if (currentContentType === "profile" && currentItems.length > 0) {
+      prepareContentForm(currentItems[0]);
+    } else if (currentContentType === "profile") {
+      // If no profile item exists, prepare form for creation
+      prepareContentForm({
+        id: null,
+        title: "T Srivatsankith", // Default name
+        description: ""
+      });
+    }
+
+    if (currentContentType === "profile") {
+      document.getElementById("contentList").style.display = "none";
+    } else {
+      document.getElementById("contentList").style.display = "block";
+    }
 
     container.querySelectorAll("[data-action='edit']").forEach((button) => {
       button.addEventListener("click", () => {
@@ -295,13 +308,10 @@ function createCardMarkup(item, config) {
     return `
       <div class="project-card">
         <div>
-          <h4>${escapeHtml(item.title || "Profile")}</h4>
-          <div class="project-meta"><span>Home card</span>${item.description ? "<span>Photo set</span>" : ""}</div>
-          <p>Profile name and photo used on the right-side home card.</p>
-        </div>
-        <div class="project-actions">
-          <button type="button" class="btn secondary" data-action="edit" data-id="${item.id}">Edit</button>
-          <button type="button" class="btn secondary" data-action="delete" data-id="${item.id}">Delete</button>
+          <h4>Current Profile</h4>
+          <p>Name: ${escapeHtml(item.title || "Not set")}</p>
+          <p>Image URL: ${escapeHtml(item.description || "Not set")}</p>
+          ${item.description ? `<img src="${item.description}" alt="Profile Preview" style="max-width: 100px; margin-top: 10px;">` : ''}
         </div>
       </div>
     `;
@@ -336,16 +346,13 @@ function createCardMarkup(item, config) {
 
 function prepareContentForm(item) {
   const config = contentConfig[currentContentType];
-
+  
   if (currentContentType === "profile") {
-    document.getElementById("contentTitle").value = item.title || "";
+    currentEditId = item.id; // Can be null for creation
+    currentEditImage = item.description || ""; // Image URL is in description
+  } else {
     currentEditId = item.id;
-    currentEditImage = item.description || "";
-    showProfilePreview(currentEditImage);
-    document.getElementById("contentFormTitle").textContent = `Edit ${config.singular}`;
-    document.querySelector("#contentForm button[type='submit']").textContent = `Update ${config.singular}`;
-    document.getElementById("contentForm").scrollIntoView({ behavior: "smooth" });
-    return;
+    currentEditImage = item.image || "";
   }
 
   document.getElementById("contentTitle").value = item.title || "";
@@ -360,12 +367,11 @@ function prepareContentForm(item) {
   document.getElementById("contentLiveUrl").value = item.liveUrl || "";
   document.getElementById("contentFeatured").checked = item.featured || false;
   document.getElementById("contentImage").value = "";
+  updateImagePreview(currentEditImage);
   document.getElementById("contentSkills").value = (item.skills || []).join(", ");
   document.getElementById("contentFormTitle").textContent = `Edit ${config.singular}`;
   document.querySelector("#contentForm button[type='submit']").textContent = `Update ${config.singular}`;
 
-  currentEditId = item.id;
-  currentEditImage = item.image || "";
   document.getElementById("contentForm").scrollIntoView({ behavior: "smooth" });
 }
 
@@ -374,20 +380,26 @@ async function handleContentFormSubmit(event) {
 
   const title = document.getElementById("contentTitle").value.trim();
   const description = document.getElementById("contentDescription").value.trim();
+  const isProfile = currentContentType === "profile";
 
-  if (!title || (currentContentType !== "profile" && !description)) {
-    alert("Title and description are required.");
-    return;
+  if (!isProfile && (!title || !description)) {
+      alert("Title and description are required.");
+      return;
   }
 
   try {
-    const payload = currentContentType === "project"
-      ? await buildProjectPayload(title, description)
-      : currentContentType === "profile"
-      ? await buildProfilePayload(title) 
-      : buildSectionPayload(title, description);
+    let payload;
+    if (isProfile) {
+      payload = await buildProfilePayload(title);
+    } else if (currentContentType === "project") {
+      payload = await buildProjectPayload(title, description);
+    } else {
+      payload = buildSectionPayload(title, description);
+    }
+
     const config = contentConfig[currentContentType];
     const url = currentEditId ? `${config.endpoint}/${currentEditId}` : config.endpoint;
+    
     const method = currentEditId ? "PUT" : "POST";
 
     const response = await fetchAdmin(url, {
@@ -413,12 +425,24 @@ async function handleContentFormSubmit(event) {
   }
 }
 
+async function buildProfilePayload(title) {
+  let imageUrl = currentEditImage;
+
+  if (croppedImageBlob) {
+    imageUrl = await uploadProjectImage(croppedImageBlob);
+  }
+
+  return {
+    title: title || "T Srivatsankith", // Default title
+    description: imageUrl, // The image URL is the description
+  };
+}
+
 async function buildProjectPayload(title, description) {
-  const imageFile = document.getElementById("contentImage").files[0];
   let image = currentEditId ? currentEditImage : "";
 
-  if (imageFile) {
-    image = await uploadProjectImage(imageFile);
+  if (croppedImageBlob) {
+    image = await uploadProjectImage(croppedImageBlob);
   }
 
   const toArray = (str) => str.split(',').map(s => s.trim()).filter(Boolean);
@@ -439,181 +463,12 @@ async function buildProjectPayload(title, description) {
   };
 }
 
-async function buildProfilePayload(title) {
-  let image = currentEditId ? currentEditImage : "";
-
-  if (profileCropState.file) {
-    const croppedImage = await createCroppedProfileImage();
-    image = await uploadProjectImage(croppedImage);
-  }
-
-  return {
-    title,
-    description: image
-  };
-}
-
-function resolveMediaUrl(url) {
-  if (!url) {
-    return "";
-  }
-
-  if (/^https?:\/\//i.test(url)) {
-    return url;
-  }
-
-  return url.startsWith("/") ? `${API_ORIGIN}${url}` : url;
-}
-
-function showProfilePreview(url) {
-  const preview = document.getElementById("profileImagePreview");
-  if (!preview) {
-    return;
-  }
-
-  if (!url) {
-    preview.removeAttribute("src");
-    preview.style.display = "none";
-    return;
-  }
-
-  preview.src = resolveMediaUrl(url);
-  preview.style.display = "block";
-}
-
-function handleSelectedProfileImage(event) {
-  const file = event.target.files[0];
-  if (!file) {
-    return;
-  }
-
-  resetProfileCropper(false);
-  profileCropState.file = file;
-  profileCropState.objectUrl = URL.createObjectURL(file);
-  profileCropState.zoom = 1;
-  profileCropState.x = 0;
-  profileCropState.y = 0;
-
-  const cropper = document.getElementById("profileCropper");
-  const cropImage = document.getElementById("profileCropImage");
-  const preview = document.getElementById("profileImagePreview");
-
-  if (cropImage) {
-    cropImage.src = profileCropState.objectUrl;
-  }
-  cropper?.classList.add("active");
-  if (preview) {
-    preview.src = profileCropState.objectUrl;
-    preview.style.display = "block";
-  }
-  updateProfileCropControls();
-  updateProfileCropPreview();
-}
-
-function updateProfileCropFromControls() {
-  profileCropState.zoom = Number(document.getElementById("profileCropZoom")?.value) || 1;
-  profileCropState.x = Number(document.getElementById("profileCropX")?.value) || 0;
-  profileCropState.y = Number(document.getElementById("profileCropY")?.value) || 0;
-  updateProfileCropPreview();
-}
-
-function updateProfileCropControls() {
-  const zoom = document.getElementById("profileCropZoom");
-  const x = document.getElementById("profileCropX");
-  const y = document.getElementById("profileCropY");
-
-  if (zoom) {
-    zoom.value = String(profileCropState.zoom);
-  }
-  if (x) {
-    x.value = String(profileCropState.x);
-  }
-  if (y) {
-    y.value = String(profileCropState.y);
-  }
-}
-
-function updateProfileCropPreview() {
-  const cropImage = document.getElementById("profileCropImage");
-  if (!cropImage) {
-    return;
-  }
-
-  cropImage.style.transform = `translate(${profileCropState.x}%, ${profileCropState.y}%) scale(${profileCropState.zoom})`;
-}
-
-function resetProfileCropper(clearInput = true) {
-  if (profileCropState.objectUrl) {
-    URL.revokeObjectURL(profileCropState.objectUrl);
-  }
-
-  profileCropState = {
-    file: null,
-    objectUrl: "",
-    zoom: 1,
-    x: 0,
-    y: 0
-  };
-
-  document.getElementById("profileCropper")?.classList.remove("active");
-  const cropImage = document.getElementById("profileCropImage");
-  if (cropImage) {
-    cropImage.removeAttribute("src");
-    cropImage.style.transform = "";
-  }
-  if (clearInput) {
-    const input = document.getElementById("profileImage");
-    if (input) {
-      input.value = "";
-    }
-  }
-  updateProfileCropControls();
-}
-
-function loadImage(src) {
-  return new Promise((resolve, reject) => {
-    const image = new Image();
-    image.onload = () => resolve(image);
-    image.onerror = reject;
-    image.src = src;
-  });
-}
-
-async function createCroppedProfileImage() {
-  const image = await loadImage(profileCropState.objectUrl);
-  const outputSize = 800;
-  const canvas = document.createElement("canvas");
-  const context = canvas.getContext("2d");
-  canvas.width = outputSize;
-  canvas.height = outputSize;
-
-  const baseScale = Math.max(outputSize / image.naturalWidth, outputSize / image.naturalHeight);
-  const scale = baseScale * profileCropState.zoom;
-  const drawWidth = image.naturalWidth * scale;
-  const drawHeight = image.naturalHeight * scale;
-  const maxOffsetX = Math.max(0, (drawWidth - outputSize) / 2);
-  const maxOffsetY = Math.max(0, (drawHeight - outputSize) / 2);
-  const offsetX = (profileCropState.x / 100) * maxOffsetX;
-  const offsetY = (profileCropState.y / 100) * maxOffsetY;
-  const drawX = (outputSize - drawWidth) / 2 + offsetX;
-  const drawY = (outputSize - drawHeight) / 2 + offsetY;
-
-  context.drawImage(image, drawX, drawY, drawWidth, drawHeight);
-
-  return new Promise((resolve, reject) => {
-    canvas.toBlob((blob) => {
-      if (!blob) {
-        reject(new Error("Profile image crop failed"));
-        return;
-      }
-
-      const extension = profileCropState.file?.type === "image/png" ? "png" : "jpg";
-      resolve(new File([blob], `profile-photo.${extension}`, { type: blob.type || "image/jpeg" }));
-    }, "image/jpeg", 0.9);
-  });
-}
-
 function buildSectionPayload(title, description) {
+  // Profile is handled separately, so this is for other content types
+  if (currentContentType === "profile") {
+    return {};
+  }
+
   const payload = {
     title,
     description,
@@ -629,7 +484,7 @@ function buildSectionPayload(title, description) {
 
 async function uploadProjectImage(file) {
   const formData = new FormData();
-  formData.append("image", file);
+  formData.append("image", file, "cropped-image.png"); // Sending blob as a file
 
   const response = await fetchAdmin(`${API_BASE}/projects/upload`, {
     method: "POST",
@@ -647,8 +502,7 @@ async function uploadProjectImage(file) {
 
 async function deleteContentItem(id) {
   const config = contentConfig[currentContentType];
-  const itemName = currentContentType === "profile" ? "home card" : config.singular.toLowerCase();
-  if (!confirm(`Delete this ${itemName}?`)) {
+  if (!confirm(`Delete this ${config.singular.toLowerCase()}?`)) {
     return;
   }
 
@@ -669,6 +523,54 @@ async function deleteContentItem(id) {
     console.error("Delete failed:", error);
     alert("Delete failed. Please try again.");
   }
+}
+
+function updateImagePreview(url) {
+  const preview = document.getElementById("imagePreview");
+  if (!preview) return;
+
+  preview.style.backgroundImage = url ? `url('${url}')` : "none";
+}
+
+function openCropperModal(imageSrc) {
+  const modal = document.getElementById("cropperModal");
+  const image = document.getElementById("imageToCrop");
+  if (!modal || !image) return;
+
+  image.src = imageSrc;
+  modal.style.display = "block";
+
+  if (cropper) {
+    cropper.destroy();
+  }
+
+  cropper = new Cropper(image, {
+    aspectRatio: 1,
+    viewMode: 1,
+    background: false,
+    autoCropArea: 0.8,
+  });
+}
+
+function handleCrop() {
+  if (!cropper) return;
+
+  cropper.getCroppedCanvas({ width: 512, height: 512 }).toBlob((blob) => {
+    croppedImageBlob = blob;
+    const previewUrl = URL.createObjectURL(blob);
+    updateImagePreview(previewUrl);
+    closeCropperModal();
+  }, "image/png");
+}
+
+function cancelCrop() {
+  document.getElementById("contentImage").value = ""; // Reset file input
+  closeCropperModal();
+}
+
+function closeCropperModal() {
+  document.getElementById("cropperModal").style.display = "none";
+  if (cropper) cropper.destroy();
 }
 
 function escapeHtml(value) {

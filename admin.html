@@ -11,6 +11,8 @@
   />
 
   <link rel="stylesheet" href="css/style.css" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.6.1/cropper.min.css" />
+
   <style>
     /* Admin-specific styles */
     .admin-header {
@@ -45,7 +47,28 @@
       z-index: 1000;
     }
 
+    .image-preview-wrapper {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      margin-top: 0.5rem;
+    }
+
+    #imagePreview {
+      width: 80px;
+      height: 80px;
+      border-radius: 50%;
+      background: #333;
+      background-size: cover;
+      background-position: center;
+    }
     .logout-btn:hover {
+      background: #cc3333;
+    }
+
+    /* Cropper.js needs this for proper display */
+    #imageToCrop {
+      max-width: 100%;
       background: #cc3333;
     }
 
@@ -247,38 +270,6 @@
       display: block;
     }
 
-    .profile-cropper {
-      display: none;
-      margin-top: 1rem;
-    }
-
-    .profile-cropper.active {
-      display: block;
-    }
-
-    .profile-crop-frame {
-      width: min(260px, 100%);
-      aspect-ratio: 1;
-      border: 2px solid #00d4ff;
-      border-radius: 8px;
-      overflow: hidden;
-      background: rgba(0, 0, 0, 0.35);
-      margin-bottom: 1rem;
-    }
-
-    .profile-crop-frame img {
-      width: 100%;
-      height: 100%;
-      object-fit: cover;
-      transform-origin: center;
-    }
-
-    .crop-controls {
-      display: grid;
-      gap: 0.75rem;
-      max-width: 320px;
-    }
-
     @media (max-width: 768px) {
       .admin-layout {
         grid-template-columns: 1fr;
@@ -315,6 +306,21 @@
       </form>
     </div>
   </div>
+
+  <!-- Cropper Modal -->
+  <div id="cropperModal" class="modal">
+    <div class="modal-content" style="max-width: 600px;">
+      <h2>Crop Image</h2>
+      <div style="max-height: 400px; overflow: hidden;">
+        <img id="imageToCrop" src="" alt="Image to crop">
+      </div>
+      <div class="modal-actions">
+        <button type="button" id="cropImageBtn" class="btn primary">Crop</button>
+        <button type="button" id="cancelCropBtn" class="btn secondary">Cancel</button>
+      </div>
+    </div>
+  </div>
+
 
   <!-- Admin Header -->
   <header class="admin-header">
@@ -403,38 +409,20 @@
         </div>
 
         <div class="form-field">
-          <label for="contentImage">Project Image</label>
-          <input type="file" id="contentImage" name="contentImage" accept="image/*" />
-        </div>
-
-        <div class="form-field">
           <label for="contentFeatured">Featured Project</label>
           <input type="checkbox" id="contentFeatured" name="contentFeatured" />
         </div>
       </div>
 
-      <div id="profileFields" class="conditional-fields">
-        <div class="form-field">
-          <label for="profileImage">Profile Photo</label>
-          <input type="file" id="profileImage" name="profileImage" accept="image/*" />
-          <div id="profileCropper" class="profile-cropper">
-            <div class="profile-crop-frame">
-              <img id="profileCropImage" alt="Selected Profile Crop" />
-            </div>
-            <div class="crop-controls">
-              <label for="profileCropZoom">Zoom</label>
-              <input type="range" id="profileCropZoom" min="1" max="3" step="0.05" value="1" />
-              <label for="profileCropX">Horizontal Position</label>
-              <input type="range" id="profileCropX" min="-100" max="100" step="1" value="0" />
-              <label for="profileCropY">Vertical Position</label>
-              <input type="range" id="profileCropY" min="-100" max="100" step="1" value="0" />
-            </div>
-          </div>
-          <img id="profileImagePreview" alt="Current Profile Photo" style="max-width: 150px; border-radius: 8px; margin-top: 10px; display: none;" />
+      <div id="contentOrderField" class="form-field">
+        <label for="contentImage">Image</label>
+        <div class="image-preview-wrapper">
+          <input type="file" id="contentImage" name="contentImage" accept="image/*" />
+          <div id="imagePreview"></div>
         </div>
       </div>
 
-      <div id="contentOrderField" class="form-field">
+      <div id="sortOrderField" class="form-field">
         <label for="contentOrder">Display Order</label>
         <input type="number" id="contentOrder" name="contentOrder" placeholder="1, 2, 3..." min="1" />
       </div>
@@ -450,12 +438,13 @@
       </div>
     </form>
 
-    <div class="admin-project-list">
+    <div id="contentList" class="admin-project-list">
       <h3 id="contentListTitle">Projects</h3>
       <div id="adminContentCards" class="grid"></div>
     </div>
   </main>
 
   <script src="js/admin-dashboard.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.6.1/cropper.min.js"></script>
 </body>
 </html>
