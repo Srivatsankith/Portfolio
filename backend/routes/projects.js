@@ -1,24 +1,26 @@
 const router = require("express").Router();
-const fs = require("fs");
-const path = require("path");
 const multer = require("multer");
-const mongoose = require("mongoose");
+const mongoose = "mongoose";
+const cloudinary = require("cloudinary").v2;
+const { CloudinaryStorage } = require("multer-storage-cloudinary");
 
 const auth = require("../middleware/authMiddleware");
 const Project = require("../models/Project");
 
-const uploadDir = path.join(__dirname, "../uploads");
-fs.mkdirSync(uploadDir, { recursive: true });
-
-const storage = multer.diskStorage({
-  destination: (req, file, cb) => {
-    cb(null, uploadDir);
+// Configure Cloudinary
+cloudinary.config({
+  cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+  api_key: process.env.CLOUDINARY_API_KEY,
+  api_secret: process.env.CLOUDINARY_API_SECRET,
+});
+// Configure Multer to use Cloudinary for storage
+const storage = new CloudinaryStorage({
+  cloudinary: cloudinary,
+  params: {
+    folder: "portfolio-uploads",
+    format: async (req, file) => "png", // Force PNG for consistency
+    public_id: (req, file) => `${Date.now()}-${file.fieldname}`,
   },
-  filename: (req, file, cb) => {
-    const extension = path.extname(file.originalname);
-    const safeName = `${Date.now()}-${file.fieldname}${extension}`;
-    cb(null, safeName);
-  }
 });
 
 const upload = multer({ storage });
@@ -59,7 +61,8 @@ router.post("/upload", auth, upload.single("image"), (req, res) => {
     return res.status(400).json({ message: "Image upload failed." });
   }
 
-  res.json({ imageUrl: `/uploads/${req.file.filename}` });
+  // req.file.path contains the secure URL from Cloudinary
+  res.json({ imageUrl: req.file.path });
 });
 
 router.post("/", auth, async (req, res) => {
