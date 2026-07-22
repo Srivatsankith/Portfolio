@@ -47,7 +47,7 @@ router.post("/:type", auth, async (req, res) => {
     return res.status(400).json({ message: "Invalid content type." });
   }
 
-  if (!title || !description) {
+  if (type !== "profile" && (!title || !description)) {
     return res.status(400).json({ message: "Title and description are required." });
   }
 
@@ -93,7 +93,7 @@ router.put("/:type/:id", auth, async (req, res) => {
     return res.status(400).json({ message: "Invalid content type." });
   }
 
-  if (!title || !description) {
+  if (type !== "profile" && (!title || !description)) {
     return res.status(400).json({ message: "Title and description are required." });
   }
 
