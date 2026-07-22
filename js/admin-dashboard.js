@@ -205,6 +205,8 @@ function updateFormMode() {
   titleLabel.textContent = isProfile ? "Profile Name" : "Title";
   titleInput.placeholder = isProfile ? "Your Name" : "Item title";
   titleInput.required = !isProfile; // Profile name can be optional, has a default
+  descriptionInput.required = !isProfile;
+  descriptionInput.disabled = isProfile;
 
   if (isProfile) {
     descriptionField.style.display = "none";
@@ -403,9 +405,9 @@ async function handleContentFormSubmit(event) {
     
     // For profile, always use the POST endpoint which handles upsert (create or update).
     // For other types, use PUT for updates and POST for creation.
-    const isProfileUpdate = isProfile;
-    const url = !isProfileUpdate && currentEditId ? `${config.endpoint}/${currentEditId}` : config.endpoint;
-    const method = !isProfileUpdate && currentEditId ? "PUT" : "POST";
+    const isUpdate = !isProfile && currentEditId;
+    const url = isUpdate ? `${config.endpoint}/${currentEditId}` : config.endpoint;
+    const method = isUpdate ? "PUT" : "POST";
 
     const response = await fetchAdmin(url, {
       method,
