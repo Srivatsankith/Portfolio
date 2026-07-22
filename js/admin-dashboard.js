@@ -75,11 +75,21 @@ function handleImageFileSelect(event) {
   const file = event.target.files?.[0];
   if (!file) return;
 
-  const reader = new FileReader();
-  reader.onload = (e) => {
-    openCropperModal(e.target.result);
-  };
-  reader.readAsDataURL(file);
+  if (currentContentType === "profile") {
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      openCropperModal(e.target.result);
+    };
+    reader.readAsDataURL(file);
+  } else {
+    // For projects, bypass the cropper and use the image directly
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      croppedImageDataUrl = e.target.result;
+      updateImagePreview(croppedImageDataUrl);
+    };
+    reader.readAsDataURL(file);
+  }
 }
 
 function showLoginModal() {
@@ -193,6 +203,12 @@ function updateFormMode() {
   const imageFieldWrapper = document.getElementById("contentOrderField"); // This div wraps the image uploader
   const workExperienceFields = document.getElementById("workExperienceFields");
   const orderField = document.getElementById("sortOrderField");
+  const imagePreview = document.getElementById("imagePreview");
+
+  // Adjust image preview style based on content type
+  if (imagePreview) {
+    imagePreview.style.borderRadius = isProfile ? "50%" : "8px";
+  }
 
   // --- Default States (Hide everything complex) ---
   projectFields.style.display = "none";
