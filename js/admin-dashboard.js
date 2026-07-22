@@ -37,7 +37,7 @@ const contentConfig = {
 let currentContentType = "profile";
 let currentEditId = null;
 let currentEditImage = "";
-let croppedImageBlob = null;
+let croppedImageDataUrl = null;
 let cropper = null;
 let currentItems = [];
 
@@ -129,9 +129,11 @@ async function handleLogin(event) {
 
   const username = document.getElementById("username").value.trim();
   const password = document.getElementById("password").value.trim();
+  const errorEl = document.getElementById("loginError");
+  errorEl.textContent = "";
 
   if (!username || !password) {
-    alert("Please enter both username and password.");
+    errorEl.textContent = "Please enter both username and password.";
     return;
   }
 
@@ -146,7 +148,7 @@ async function handleLogin(event) {
     const data = await response.json();
 
     if (!response.ok || !data.token) {
-      alert(data.message || "Login failed. Please check your credentials.");
+      errorEl.textContent = data.message || "Login failed. Please check your credentials.";
       return;
     }
 
@@ -156,7 +158,7 @@ async function handleLogin(event) {
     alert("Login successful!");
   } catch (error) {
     console.error("Login error:", error);
-    alert("Login failed. Please try again.");
+    errorEl.textContent = "Login failed. Please try again.";
   }
 }
 
@@ -231,7 +233,7 @@ function resetContentForm() {
   currentEditId = null;
   currentEditImage = "";
   updateFormMode();
-  croppedImageBlob = null;
+  croppedImageDataUrl = null;
   updateImagePreview("");
 }
 
@@ -428,8 +430,8 @@ async function handleContentFormSubmit(event) {
 async function buildProfilePayload(title) {
   let imageUrl = currentEditImage;
 
-  if (croppedImageBlob) {
-    imageUrl = await uploadProjectImage(croppedImageBlob);
+  if (croppedImageDataUrl) {
+    imageUrl = croppedImageDataUrl;
   }
 
   return {
@@ -441,8 +443,8 @@ async function buildProfilePayload(title) {
 async function buildProjectPayload(title, description) {
   let image = currentEditId ? currentEditImage : "";
 
-  if (croppedImageBlob) {
-    image = await uploadProjectImage(croppedImageBlob);
+  if (croppedImageDataUrl) {
+    image = croppedImageDataUrl;
   }
 
   const toArray = (str) => str.split(',').map(s => s.trim()).filter(Boolean);
@@ -480,24 +482,6 @@ function buildSectionPayload(title, description) {
     payload.skills = skills.split(',').map(s => s.trim()).filter(Boolean);
   }
   return payload;
-}
-
-async function uploadProjectImage(file) {
-  const formData = new FormData();
-  formData.append("image", file, "cropped-image.png"); // Sending blob as a file
-
-  const response = await fetchAdmin(`${API_BASE}/projects/upload`, {
-    method: "POST",
-    body: formData
-  });
-
-  if (!response.ok) {
-    const errorData = await response.json().catch(() => ({}));
-    throw new Error(errorData.message || "Image upload failed");
-  }
-
-  const data = await response.json();
-  return data.imageUrl || "";
 }
 
 async function deleteContentItem(id) {
@@ -556,10 +540,13 @@ function handleCrop() {
   if (!cropper) return;
 
   cropper.getCroppedCanvas({ width: 512, height: 512 }).toBlob((blob) => {
-    croppedImageBlob = blob;
-    const previewUrl = URL.createObjectURL(blob);
-    updateImagePreview(previewUrl);
-    closeCropperModal();
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      croppedImageDataUrl = reader.result; // This is the Base64 data URL
+      updateImagePreview(croppedImageDataUrl);
+      closeCropperModal();
+    };
+    reader.readAsDataURL(blob);
   }, "image/png");
 }
 

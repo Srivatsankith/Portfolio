@@ -1,29 +1,8 @@
 const router = require("express").Router();
-const multer = require("multer");
 const mongoose = require("mongoose");
-const cloudinary = require("cloudinary").v2;
-const { CloudinaryStorage } = require("multer-storage-cloudinary");
 
 const auth = require("../middleware/authMiddleware");
 const Project = require("../models/Project");
-
-// Configure Cloudinary
-cloudinary.config({
-  cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
-  api_key: process.env.CLOUDINARY_API_KEY,
-  api_secret: process.env.CLOUDINARY_API_SECRET,
-});
-// Configure Multer to use Cloudinary for storage
-const storage = new CloudinaryStorage({
-  cloudinary: cloudinary,
-  params: {
-    folder: "portfolio-uploads",
-    format: async (req, file) => "png", // Force PNG for consistency
-    public_id: (req, file) => `${Date.now()}-${file.fieldname}`,
-  },
-});
-
-const upload = multer({ storage });
 
 function serializeProject(project) {
   return {
@@ -46,6 +25,27 @@ function serializeProject(project) {
   };
 }
 
+function buildProjectData(body) {
+  const data = {
+    title: body.title,
+    subtitle: body.subtitle,
+    description: body.description,
+    techStack: body.techStack || [],
+    highlights: body.highlights || [],
+    metrics: body.metrics || [],
+    githubUrl: body.githubUrl,
+    liveUrl: body.liveUrl,
+    videoUrl: body.videoUrl,
+    category: body.category || "General",
+    featured: body.featured || false,
+    year: body.year,
+  };
+  if (body.image !== undefined) {
+    data.image = body.image;
+  }
+  return data;
+}
+
 router.get("/", async (req, res) => {
   try {
     const projects = await Project.find().sort({ createdAt: 1 });
@@ -56,15 +56,6 @@ router.get("/", async (req, res) => {
   }
 });
 
-router.post("/upload", auth, upload.single("image"), (req, res) => {
-  if (!req.file) {
-    return res.status(400).json({ message: "Image upload failed." });
-  }
-
-  // req.file.path contains the secure URL from Cloudinary
-  res.json({ imageUrl: req.file.path });
-});
-
 router.post("/", auth, async (req, res) => {
   const { title, description } = req.body;
 
@@ -73,22 +64,7 @@ router.post("/", auth, async (req, res) => {
   }
 
   try {
-    const newProject = new Project({
-      title: req.body.title,
-      subtitle: req.body.subtitle,
-      description: req.body.description,
-      image: req.body.image,
-      techStack: req.body.techStack || [],
-      highlights: req.body.highlights || [],
-      metrics: req.body.metrics || [],
-      githubUrl: req.body.githubUrl,
-      liveUrl: req.body.liveUrl,
-      videoUrl: req.body.videoUrl,
-      category: req.body.category || "General",
-      featured: req.body.featured || false,
-      year: req.body.year,
-      github: req.body.githubUrl || req.body.github, // Maintain legacy field
-    });
+    const newProject = new Project(buildProjectData(req.body));
     const project = await newProject.save();
 
     res.json({ message: "Project added", projectId: project._id.toString() });
@@ -111,22 +87,7 @@ router.put("/:id", auth, async (req, res) => {
   }
 
   try {
-    const updateData = {
-      title: req.body.title,
-      subtitle: req.body.subtitle,
-      description: req.body.description,
-      image: req.body.image,
-      techStack: req.body.techStack || [],
-      highlights: req.body.highlights || [],
-      metrics: req.body.metrics || [],
-      githubUrl: req.body.githubUrl,
-      liveUrl: req.body.liveUrl,
-      videoUrl: req.body.videoUrl,
-      category: req.body.category || "General",
-      featured: req.body.featured || false,
-      year: req.body.year,
-      github: req.body.githubUrl || req.body.github, // Maintain legacy field
-    };
+    const updateData = buildProjectData(req.body);
 
     const project = await Project.findByIdAndUpdate(
       id,
@@ -153,6 +114,12 @@ router.delete("/:id", auth, async (req, res) => {
   }
 
   try {
+    // Future enhancement: If you were using a cloud service, you would delete the image here.
+    // const projectToDelete = await Project.findById(id);
+    // if (projectToDelete && projectToDelete.image) {
+    //   // Call cloud service to delete image
+    // }
+
     const project = await Project.findByIdAndDelete(id);
 
     if (!project) {
