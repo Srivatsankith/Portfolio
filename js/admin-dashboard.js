@@ -64,9 +64,6 @@ function setupEventListeners() {
     applyContentType(event.target.value);
   });
   document.getElementById("profileImage")?.addEventListener("change", previewSelectedProfileImage);
-  document.getElementById("profileImageUrl")?.addEventListener("input", (event) => {
-    showProfilePreview(event.target.value.trim());
-  });
 }
 
 function showLoginModal() {
@@ -220,10 +217,6 @@ function resetContentForm() {
     profileImagePreview.removeAttribute("src");
     profileImagePreview.style.display = "none";
   }
-  const profileImageUrl = document.getElementById("profileImageUrl");
-  if (profileImageUrl) {
-    profileImageUrl.value = "";
-  }
   updateFormMode();
 }
 
@@ -261,7 +254,6 @@ async function loadContentItems() {
       currentEditId = profile.id;
       currentEditImage = profile.description || "";
       document.getElementById("contentTitle").value = profile.title || "";
-      document.getElementById("profileImageUrl").value = currentEditImage || "";
       showProfilePreview(currentEditImage);
     }
 
@@ -337,7 +329,6 @@ function prepareContentForm(item) {
     document.getElementById("contentTitle").value = item.title || "";
     currentEditId = item.id;
     currentEditImage = item.description || "";
-    document.getElementById("profileImageUrl").value = currentEditImage || "";
     showProfilePreview(currentEditImage);
     document.getElementById("contentFormTitle").textContent = `Edit ${config.singular}`;
     document.querySelector("#contentForm button[type='submit']").textContent = `Update ${config.singular}`;
@@ -438,8 +429,7 @@ async function buildProjectPayload(title, description) {
 
 async function buildProfilePayload(title) {
   const imageFile = document.getElementById("profileImage").files[0];
-  const imageUrl = document.getElementById("profileImageUrl").value.trim();
-  let image = imageUrl || (currentEditId ? currentEditImage : "");
+  let image = currentEditId ? currentEditImage : "";
 
   if (imageFile) {
     image = await uploadProjectImage(imageFile);
