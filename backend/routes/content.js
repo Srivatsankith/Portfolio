@@ -52,22 +52,17 @@ router.post("/:type", auth, async (req, res) => {
   }
 
   try {
+    // For 'profile', we use a single endpoint with upsert to handle both creation and updates.
     if (type === "profile") {
-      const item = await ContentItem.findOneAndUpdate(
+      const updatedProfile = await ContentItem.findOneAndUpdate(
         { type },
-        {
-          type,
-          title,
-          description,
-          sort_order: 0,
-          skills: []
-        },
+        { title, description, type, sort_order: 0, skills: [] },
         { upsert: true, new: true, setDefaultsOnInsert: true, sort: { updatedAt: -1, createdAt: -1 } }
       );
-
-      return res.json({ message: "Profile updated", itemId: item._id.toString() });
+      return res.json({ message: "Profile updated successfully", itemId: updatedProfile._id.toString() });
     }
 
+    // Logic for other content types
     const lastItem = await ContentItem.findOne({ type }).sort({ sort_order: -1 });
     const nextOrder = lastItem ? lastItem.sort_order + 1 : 1;
     const item = await ContentItem.create({

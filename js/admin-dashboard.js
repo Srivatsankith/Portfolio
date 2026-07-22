@@ -400,9 +400,12 @@ async function handleContentFormSubmit(event) {
     }
 
     const config = contentConfig[currentContentType];
-    const url = currentEditId ? `${config.endpoint}/${currentEditId}` : config.endpoint;
     
-    const method = currentEditId ? "PUT" : "POST";
+    // For profile, always use the POST endpoint which handles upsert (create or update).
+    // For other types, use PUT for updates and POST for creation.
+    const isProfileUpdate = isProfile;
+    const url = !isProfileUpdate && currentEditId ? `${config.endpoint}/${currentEditId}` : config.endpoint;
+    const method = !isProfileUpdate && currentEditId ? "PUT" : "POST";
 
     const response = await fetchAdmin(url, {
       method,
