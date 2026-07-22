@@ -102,7 +102,11 @@ router.put("/:id", auth, async (req, res) => {
     res.json({ message: "Project updated" });
   } catch (err) {
     console.error("Project update failed:", err);
-    res.status(500).json({ message: "Update failed" });
+
+    res.status(500).json({
+      message: err.message,
+      error: err
+    });
   }
 });
 
