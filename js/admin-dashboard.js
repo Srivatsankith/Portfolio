@@ -383,6 +383,7 @@ function prepareContentForm(item) {
   document.getElementById("contentMetrics").value = (item.metrics || []).join(", ");
   document.getElementById("contentGithubUrl").value = item.githubUrl || "";
   document.getElementById("contentLiveUrl").value = item.liveUrl || "";
+  document.getElementById("videoUrl").value = item.videoUrl || "";
   document.getElementById("contentFeatured").checked = item.featured || false;
   document.getElementById("contentImage").value = "";
   updateImagePreview(currentEditImage);

@@ -14,7 +14,7 @@ function serializeProject(project) {
     metrics: project.metrics,
     githubUrl: project.githubUrl,
     liveUrl: project.liveUrl,
-    videoUrl: project.videoUrl,
+    videoUrl: project.videoUrl || "",
     category: project.category || "",
     featured: project.featured,
     year: project.year,
