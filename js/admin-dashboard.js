@@ -1,6 +1,4 @@
-const API_BASE = ["localhost", "127.0.0.1"].includes(window.location.hostname)
-  ? "http://localhost:5000/api"
-  : "https://portfolio-backend-jkf3.onrender.com/api";
+const API_BASE = "https://portfolio-backend-jkf3.onrender.com/api";
 const API_ORIGIN = new URL(API_BASE).origin;
 const contentConfig = {
   profile: {
