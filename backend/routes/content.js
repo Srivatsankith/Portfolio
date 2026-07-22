@@ -30,7 +30,8 @@ router.get("/:type", async (req, res) => {
   }
 
   try {
-    const rows = await ContentItem.find({ type }).sort({ sort_order: 1, createdAt: 1 });
+    const sort = type === "profile" ? { updatedAt: -1, createdAt: -1 } : { sort_order: 1, createdAt: 1 };
+    const rows = await ContentItem.find({ type }).sort(sort);
     res.json(rows.map(serializeContentItem));
   } catch (err) {
     console.error("Content fetch failed:", err);
@@ -51,6 +52,22 @@ router.post("/:type", auth, async (req, res) => {
   }
 
   try {
+    if (type === "profile") {
+      const item = await ContentItem.findOneAndUpdate(
+        { type },
+        {
+          type,
+          title,
+          description,
+          sort_order: 0,
+          skills: []
+        },
+        { upsert: true, new: true, setDefaultsOnInsert: true, sort: { updatedAt: -1, createdAt: -1 } }
+      );
+
+      return res.json({ message: "Profile updated", itemId: item._id.toString() });
+    }
+
     const lastItem = await ContentItem.findOne({ type }).sort({ sort_order: -1 });
     const nextOrder = lastItem ? lastItem.sort_order + 1 : 1;
     const item = await ContentItem.create({

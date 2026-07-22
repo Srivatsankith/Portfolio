@@ -38,6 +38,13 @@ let currentContentType = "profile";
 let currentEditId = null;
 let currentEditImage = "";
 let currentItems = [];
+let profileCropState = {
+  file: null,
+  objectUrl: "",
+  zoom: 1,
+  x: 0,
+  y: 0
+};
 
 document.addEventListener("DOMContentLoaded", () => {
   setupEventListeners();
@@ -63,7 +70,10 @@ function setupEventListeners() {
   document.getElementById("contentType")?.addEventListener("change", (event) => {
     applyContentType(event.target.value);
   });
-  document.getElementById("profileImage")?.addEventListener("change", previewSelectedProfileImage);
+  document.getElementById("profileImage")?.addEventListener("change", handleSelectedProfileImage);
+  ["profileCropZoom", "profileCropX", "profileCropY"].forEach((id) => {
+    document.getElementById(id)?.addEventListener("input", updateProfileCropFromControls);
+  });
 }
 
 function showLoginModal() {
@@ -212,6 +222,7 @@ function resetContentForm() {
 
   currentEditId = null;
   currentEditImage = "";
+  resetProfileCropper();
   const profileImagePreview = document.getElementById("profileImagePreview");
   if (profileImagePreview) {
     profileImagePreview.removeAttribute("src");
@@ -234,7 +245,7 @@ async function loadContentItems() {
   }
 
   try {
-    const response = await fetch(config.endpoint);
+    const response = await fetch(config.endpoint, { cache: "no-store" });
     currentItems = response.ok ? await response.json() : [];
 
     container.innerHTML = "";
@@ -250,7 +261,7 @@ async function loadContentItems() {
     }
 
     if (currentContentType === "profile") {
-      const profile = currentItems[0];
+      const profile = currentItems.find((item) => item.description) || currentItems[0];
       currentEditId = profile.id;
       currentEditImage = profile.description || "";
       document.getElementById("contentTitle").value = profile.title || "";
@@ -429,11 +440,11 @@ async function buildProjectPayload(title, description) {
 }
 
 async function buildProfilePayload(title) {
-  const imageFile = document.getElementById("profileImage").files[0];
   let image = currentEditId ? currentEditImage : "";
 
-  if (imageFile) {
-    image = await uploadProjectImage(imageFile);
+  if (profileCropState.file) {
+    const croppedImage = await createCroppedProfileImage();
+    image = await uploadProjectImage(croppedImage);
   }
 
   return {
@@ -470,15 +481,136 @@ function showProfilePreview(url) {
   preview.style.display = "block";
 }
 
-function previewSelectedProfileImage(event) {
+function handleSelectedProfileImage(event) {
   const file = event.target.files[0];
-  const preview = document.getElementById("profileImagePreview");
-  if (!file || !preview) {
+  if (!file) {
     return;
   }
 
-  preview.src = URL.createObjectURL(file);
-  preview.style.display = "block";
+  resetProfileCropper(false);
+  profileCropState.file = file;
+  profileCropState.objectUrl = URL.createObjectURL(file);
+  profileCropState.zoom = 1;
+  profileCropState.x = 0;
+  profileCropState.y = 0;
+
+  const cropper = document.getElementById("profileCropper");
+  const cropImage = document.getElementById("profileCropImage");
+  const preview = document.getElementById("profileImagePreview");
+
+  if (cropImage) {
+    cropImage.src = profileCropState.objectUrl;
+  }
+  cropper?.classList.add("active");
+  if (preview) {
+    preview.src = profileCropState.objectUrl;
+    preview.style.display = "block";
+  }
+  updateProfileCropControls();
+  updateProfileCropPreview();
+}
+
+function updateProfileCropFromControls() {
+  profileCropState.zoom = Number(document.getElementById("profileCropZoom")?.value) || 1;
+  profileCropState.x = Number(document.getElementById("profileCropX")?.value) || 0;
+  profileCropState.y = Number(document.getElementById("profileCropY")?.value) || 0;
+  updateProfileCropPreview();
+}
+
+function updateProfileCropControls() {
+  const zoom = document.getElementById("profileCropZoom");
+  const x = document.getElementById("profileCropX");
+  const y = document.getElementById("profileCropY");
+
+  if (zoom) {
+    zoom.value = String(profileCropState.zoom);
+  }
+  if (x) {
+    x.value = String(profileCropState.x);
+  }
+  if (y) {
+    y.value = String(profileCropState.y);
+  }
+}
+
+function updateProfileCropPreview() {
+  const cropImage = document.getElementById("profileCropImage");
+  if (!cropImage) {
+    return;
+  }
+
+  cropImage.style.transform = `translate(${profileCropState.x}%, ${profileCropState.y}%) scale(${profileCropState.zoom})`;
+}
+
+function resetProfileCropper(clearInput = true) {
+  if (profileCropState.objectUrl) {
+    URL.revokeObjectURL(profileCropState.objectUrl);
+  }
+
+  profileCropState = {
+    file: null,
+    objectUrl: "",
+    zoom: 1,
+    x: 0,
+    y: 0
+  };
+
+  document.getElementById("profileCropper")?.classList.remove("active");
+  const cropImage = document.getElementById("profileCropImage");
+  if (cropImage) {
+    cropImage.removeAttribute("src");
+    cropImage.style.transform = "";
+  }
+  if (clearInput) {
+    const input = document.getElementById("profileImage");
+    if (input) {
+      input.value = "";
+    }
+  }
+  updateProfileCropControls();
+}
+
+function loadImage(src) {
+  return new Promise((resolve, reject) => {
+    const image = new Image();
+    image.onload = () => resolve(image);
+    image.onerror = reject;
+    image.src = src;
+  });
+}
+
+async function createCroppedProfileImage() {
+  const image = await loadImage(profileCropState.objectUrl);
+  const outputSize = 800;
+  const canvas = document.createElement("canvas");
+  const context = canvas.getContext("2d");
+  canvas.width = outputSize;
+  canvas.height = outputSize;
+
+  const baseScale = Math.max(outputSize / image.naturalWidth, outputSize / image.naturalHeight);
+  const scale = baseScale * profileCropState.zoom;
+  const drawWidth = image.naturalWidth * scale;
+  const drawHeight = image.naturalHeight * scale;
+  const maxOffsetX = Math.max(0, (drawWidth - outputSize) / 2);
+  const maxOffsetY = Math.max(0, (drawHeight - outputSize) / 2);
+  const offsetX = (profileCropState.x / 100) * maxOffsetX;
+  const offsetY = (profileCropState.y / 100) * maxOffsetY;
+  const drawX = (outputSize - drawWidth) / 2 + offsetX;
+  const drawY = (outputSize - drawHeight) / 2 + offsetY;
+
+  context.drawImage(image, drawX, drawY, drawWidth, drawHeight);
+
+  return new Promise((resolve, reject) => {
+    canvas.toBlob((blob) => {
+      if (!blob) {
+        reject(new Error("Profile image crop failed"));
+        return;
+      }
+
+      const extension = profileCropState.file?.type === "image/png" ? "png" : "jpg";
+      resolve(new File([blob], `profile-photo.${extension}`, { type: blob.type || "image/jpeg" }));
+    }, "image/jpeg", 0.9);
+  });
 }
 
 function buildSectionPayload(title, description) {

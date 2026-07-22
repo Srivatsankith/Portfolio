@@ -571,9 +571,9 @@ async function loadProfileData() {
   }
 
   try {
-    const response = await fetch(`${API_BASE}/content/profile`);
+    const response = await fetch(`${API_BASE}/content/profile`, { cache: "no-store" });
     const profileItems = response.ok ? await response.json() : [];
-    const profile = profileItems[0];
+    const profile = profileItems.find((item) => item.description) || profileItems[0];
 
     if (!profile) {
       setProfileInitials(profileName?.textContent || "T Srivatsankith");
