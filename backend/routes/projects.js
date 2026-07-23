@@ -27,14 +27,14 @@ function buildProjectData(body) {
   const data = {
     title: body.title,
     description: body.description,
-    techStack: body.techStack || [],
-    metrics: body.metrics || [],
-    githubUrl: body.githubUrl,
-    liveUrl: body.liveUrl,
-    videoUrl: body.videoUrl,
-    category: body.category || "General",
-    featured: body.featured || false,
-    year: body.year,
+    techStack: body.techStack || [], // Ensure it's an array
+    metrics: body.metrics || [], // Ensure it's an array
+    githubUrl: body.githubUrl || "",
+    liveUrl: body.liveUrl || "",
+    videoUrl: body.videoUrl || "",
+    category: body.category || "General", // Default category
+    featured: body.featured || false, // Default featured status
+    year: body.year || null, // Allow year to be null
   };
   if (body.image !== undefined) {
     data.image = body.image;
@@ -98,11 +98,8 @@ router.put("/:id", auth, async (req, res) => {
     res.json({ message: "Project updated" });
   } catch (err) {
     console.error("Project update failed:", err);
-
-    res.status(500).json({
-      message: err.message,
-      error: err
-    });
+    // Send a more specific error message to the frontend
+    res.status(500).json({ message: `Update failed: ${err.message}` });
   }
 });
 

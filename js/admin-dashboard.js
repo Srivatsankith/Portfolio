@@ -434,7 +434,8 @@ async function handleContentFormSubmit(event) {
     const result = await response.json().catch(() => ({}));
 
     if (!response.ok) {
-      alert(result.message || "Operation failed.");
+      // Use the detailed error from the backend, or a fallback.
+      throw new Error(result.message || "Operation failed. The server returned an error.");
       return;
     }
 
@@ -443,7 +444,7 @@ async function handleContentFormSubmit(event) {
     loadContentItems();
   } catch (error) {
     console.error("Content form submission failed:", error);
-    alert(error.message || "Operation failed. Please try again.");
+    alert(error.message); // Display the detailed error message to the user.
   }
 }
 
