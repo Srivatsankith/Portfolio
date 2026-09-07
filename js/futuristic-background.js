@@ -1,163 +1,72 @@
-/**
- * Futuristic Cyberpunk Background Animation
- *
- * This script uses the Canvas API to render a multi-layered, animated background
- * with a high-tech, cyberpunk aesthetic.
- *
- * Features:
- * - Lightweight 2D Canvas rendering.
- * - Layered composition for a sense of depth.
- * - Animated elements: neural network, particles, grid, and scanline.
- * - Optimized for performance using requestAnimationFrame.
- * - Fully responsive to container size changes.
- */
+/* Ambient neural constellations for the portfolio background. */
 function initFuturisticBackground(container) {
-  if (!container) {
-    console.error("Animation container is missing.");
-    return;
-  }
-
+  if (!container) return;
   const canvas = document.createElement("canvas");
   const ctx = canvas.getContext("2d", { alpha: false });
-  container.innerHTML = ''; // Clear existing content (like the old Three.js canvas)
-  container.appendChild(canvas);
+  container.replaceChildren(canvas);
+  let width = 0, height = 0, nodes = [], stars = [], animationFrame, lastTime = 0;
+  const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
+  const clusters = [
+    { x: 0.08, y: 0.22, sx: 0.22, sy: 0.24, hue: 190 },
+    { x: 0.90, y: 0.28, sx: 0.20, sy: 0.30, hue: 275 },
+    { x: 0.72, y: 0.82, sx: 0.30, sy: 0.18, hue: 210 }
+  ];
 
-  let width, height, nodes, networkLayers;
-  const config = {
-    colors: {
-      bg: '#050816',
-      cyan: 'rgba(0, 229, 255, 0.8)',
-      blue: 'rgba(33, 150, 243, 0.7)',
-      purple: 'rgba(124, 77, 255, 0.7)',
-    },
-    nodeRadius: 2.2
-  };
+  function makeNode(cluster, id) {
+    const angle = Math.random() * Math.PI * 2, speed = 0.07 + Math.random() * 0.13;
+    return { x: (cluster.x + (Math.random() - .5) * cluster.sx) * width, y: (cluster.y + (Math.random() - .5) * cluster.sy) * height,
+      homeX: cluster.x * width, homeY: cluster.y * height, rangeX: cluster.sx * width * .55, rangeY: cluster.sy * height * .55,
+      vx: Math.cos(angle) * speed, vy: Math.sin(angle) * speed, radius: 2.1 + Math.random() * 2.1,
+      hue: cluster.hue + (Math.random() - .5) * 20, phase: Math.random() * Math.PI * 2, id };
+  }
 
-  // --- SETUP ---
   function setup() {
-    width = canvas.width = container.clientWidth;
-    height = canvas.height = container.clientHeight;
-
-    // Normalized coordinates keep one recognizable neural-network pattern
-    // stable while allowing it to scale with the viewport.
-    const layerBlueprint = [
-      [0.12, [0.2, 0.4, 0.6, 0.8]],
-      [0.36, [0.12, 0.3, 0.5, 0.7, 0.88]],
-      [0.64, [0.2, 0.4, 0.6, 0.8]],
-      [0.88, [0.3, 0.5, 0.7]]
-    ];
-
-    networkLayers = layerBlueprint.map(([x, yPositions], layerIndex) =>
-      yPositions.map((normalizedY, nodeIndex) => ({
-        x: width * x,
-        y: height * normalizedY,
-        radius: config.nodeRadius,
-        pulseOffset: (layerIndex * 1.7) + (nodeIndex * 0.55)
-      }))
-    );
-    nodes = networkLayers.flat();
+    const ratio = Math.min(window.devicePixelRatio || 1, 2);
+    width = container.clientWidth; height = container.clientHeight;
+    canvas.width = Math.max(1, Math.floor(width * ratio)); canvas.height = Math.max(1, Math.floor(height * ratio));
+    ctx.setTransform(ratio, 0, 0, ratio, 0, 0);
+    const total = Math.max(34, Math.min(58, Math.round((width * height) / 33000)));
+    nodes = Array.from({ length: total }, (_, id) => makeNode(clusters[id % clusters.length], id));
+    stars = Array.from({ length: Math.round(total * 1.8) }, () => ({ x: Math.random() * width, y: Math.random() * height, radius: Math.random() * .7 + .15, phase: Math.random() * Math.PI * 2 }));
   }
 
-  // --- DRAWING FUNCTIONS ---
-  function drawBackground(ctx) {
+  function drawAtmosphere(time) {
+    ctx.fillStyle = "#050816"; ctx.fillRect(0, 0, width, height);
+    [[width*.08,height*.18,"rgba(0,214,255,.11)"],[width*.92,height*.3,"rgba(156,91,255,.10)"],[width*.7,height*.84,"rgba(20,124,255,.075)"]].forEach(([x,y,color]) => {
+      const gradient = ctx.createRadialGradient(x, y, 0, x, y, Math.min(width, height) * .42);
+      gradient.addColorStop(0, color); gradient.addColorStop(1, "rgba(5,8,22,0)"); ctx.fillStyle = gradient; ctx.fillRect(0, 0, width, height);
+    });
+    stars.forEach((star) => { ctx.globalAlpha = .16 + (Math.sin(time*.0008 + star.phase)+1)*.11; ctx.fillStyle="#b8eaff"; ctx.beginPath(); ctx.arc(star.x,star.y,star.radius,0,Math.PI*2); ctx.fill(); });
     ctx.globalAlpha = 1;
-    ctx.fillStyle = config.colors.bg;
-    ctx.fillRect(0, 0, width, height);
-
-    // Layer 6: Glowing Blobs
-    const glows = [
-      { x: width * 0.15, y: height * 0.2, color: 'rgba(0, 229, 255, 0.08)', radius: Math.min(width, height) * 0.7 },
-      { x: width * 0.85, y: height * 0.8, color: 'rgba(124, 77, 255, 0.08)', radius: Math.min(width, height) * 0.6 }
-    ];
-
-    glows.forEach(glow => {
-      const grad = ctx.createRadialGradient(glow.x, glow.y, 0, glow.x, glow.y, glow.radius);
-      grad.addColorStop(0, glow.color);
-      grad.addColorStop(1, 'transparent');
-      ctx.fillStyle = grad;
-      ctx.fillRect(0, 0, width, height);
-    });
   }
 
-  function drawNetwork(ctx, time) {
-    let edgeIndex = 0;
-    const driftX = Math.sin(time * 0.00018) * Math.min(width * 0.035, 24);
-    const driftY = Math.cos(time * 0.00014) * Math.min(height * 0.025, 16);
-
-    networkLayers.slice(0, -1).forEach((layer, layerIndex) => {
-      const nextLayer = networkLayers[layerIndex + 1];
-      layer.forEach((node) => {
-        nextLayer.forEach((nextNode) => {
-          const nodeX = node.x + driftX;
-          const nodeY = node.y + driftY;
-          const nextNodeX = nextNode.x + driftX;
-          const nextNodeY = nextNode.y + driftY;
-
-          ctx.beginPath();
-          ctx.moveTo(nodeX, nodeY);
-          ctx.lineTo(nextNodeX, nextNodeY);
-          ctx.strokeStyle = config.colors.blue;
-          ctx.lineWidth = 0.55;
-          ctx.globalAlpha = 0.22;
-          ctx.stroke();
-
-          // Move a small signal along each connection as the network gently floats.
-          const progress = (time * 0.00012 + edgeIndex * 0.08) % 1;
-          const signalX = nodeX + (nextNodeX - nodeX) * progress;
-          const signalY = nodeY + (nextNodeY - nodeY) * progress;
-          ctx.beginPath();
-          ctx.arc(signalX, signalY, 1.4, 0, Math.PI * 2);
-          ctx.fillStyle = config.colors.cyan;
-          ctx.globalAlpha = 0.8;
-          ctx.shadowColor = config.colors.cyan;
-          ctx.shadowBlur = 6;
-          ctx.fill();
-          ctx.shadowBlur = 0;
-          edgeIndex += 1;
-        });
-      });
-    });
-
+  function update(delta, time) {
     nodes.forEach((node) => {
-      const pulse = (Math.sin(time * 0.0015 + node.pulseOffset) + 1) / 2;
-      ctx.beginPath();
-      ctx.arc(node.x + driftX, node.y + driftY, node.radius * (1 + pulse * 0.55), 0, Math.PI * 2);
-      ctx.fillStyle = config.colors.cyan;
-      ctx.globalAlpha = 0.55 + pulse * 0.45;
-      ctx.shadowColor = config.colors.cyan;
-      ctx.shadowBlur = 8 + pulse * 8;
-      ctx.fill();
-      ctx.shadowBlur = 0;
+      node.x += node.vx * delta;
+      node.y += node.vy * delta;
+      node.x += Math.sin(time * 0.00055 + node.phase) * 0.08;
+      node.y += Math.cos(time * 0.0007 + node.phase) * 0.12;
+      if (Math.abs(node.x-node.homeX)>node.rangeX) node.vx*=-1;
+      if (Math.abs(node.y-node.homeY)>node.rangeY) node.vy*=-1;
     });
   }
 
-  // --- ANIMATION LOOP ---
-  function animate(time) {
-    ctx.save();
-
-    drawBackground(ctx);
-    drawNetwork(ctx, time);
-
-    ctx.restore();
-
-    requestAnimationFrame(animate);
+  function drawLink(from, to, time) {
+    const dx=to.x-from.x, dy=to.y-from.y, distance=Math.hypot(dx,dy), alpha=Math.max(.035,.24*(1-distance/185));
+    const curve=Math.sin(from.id*2.7+to.id)*13, midX=(from.x+to.x)/2-dy/distance*curve, midY=(from.y+to.y)/2+dx/distance*curve;
+    ctx.beginPath(); ctx.moveTo(from.x,from.y); ctx.quadraticCurveTo(midX,midY,to.x,to.y); ctx.strokeStyle=`hsla(${from.hue},92%,68%,${alpha})`; ctx.lineWidth=.45; ctx.stroke();
+    if ((from.id+to.id)%11===0) { const p=(time*.000075+from.id*.13)%1, q=1-p, x=q*q*from.x+2*q*p*midX+p*p*to.x, y=q*q*from.y+2*q*p*midY+p*p*to.y; ctx.beginPath(); ctx.arc(x,y,1.1,0,Math.PI*2); ctx.fillStyle="rgba(169,247,255,.82)"; ctx.fill(); }
   }
 
-  // --- EVENT LISTENERS ---
-  function onResize() {
-    setup();
+  function drawNetwork(time) {
+    nodes.forEach((node,index) => nodes.slice(index+1).map((next)=>({next,distance:Math.hypot(next.x-node.x,next.y-node.y)})).filter(({distance})=>distance<185).sort((a,b)=>a.distance-b.distance).slice(0,2).forEach(({next})=>drawLink(node,next,time)));
+    nodes.forEach((node) => { const pulse=.68+(Math.sin(time*.0011+node.phase)+1)*.16; ctx.beginPath(); ctx.arc(node.x,node.y,node.radius*pulse,0,Math.PI*2); ctx.fillStyle=`hsla(${node.hue},100%,76%,.9)`; ctx.shadowColor=`hsla(${node.hue},100%,70%,.9)`; ctx.shadowBlur=11; ctx.fill(); });
+    ctx.shadowBlur=0;
   }
 
-  const resizeObserver = new ResizeObserver(onResize);
-  resizeObserver.observe(container);
-
-  // --- INITIALIZATION ---
-  setup();
-  requestAnimationFrame(animate);
-
-  // Return a cleanup function in case it's needed for a SPA transition
-  return () => {
-    resizeObserver.disconnect();
-    container.innerHTML = '';
-  };
+  function animate(time) { const delta=Math.min((time-lastTime)/16.67||1,2); lastTime=time; drawAtmosphere(time); if(!reducedMotion.matches) update(delta, time); drawNetwork(time); if(!reducedMotion.matches) animationFrame=requestAnimationFrame(animate); }
+  const observer = new ResizeObserver(setup); observer.observe(container);
+  const onMotionChange = () => { cancelAnimationFrame(animationFrame); lastTime=0; if(reducedMotion.matches) animate(0); else animationFrame=requestAnimationFrame(animate); };
+  reducedMotion.addEventListener("change", onMotionChange); setup(); if(reducedMotion.matches) animate(0); else animationFrame=requestAnimationFrame(animate);
+  return () => { observer.disconnect(); reducedMotion.removeEventListener("change",onMotionChange); cancelAnimationFrame(animationFrame); container.replaceChildren(); };
 }

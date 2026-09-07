@@ -1329,12 +1329,6 @@ document.getElementById("contactForm")?.addEventListener("submit", handleContact
 loadHomepageData();
 
 document.addEventListener("DOMContentLoaded", () => {
-  // Initialize the futuristic background animation.
-  // This looks for <div id="neural-network-container"></div> in the main HTML file
-  // and replaces its content with the new canvas background.
-  const neuralContainer = document.getElementById("neural-network-container");
-  if (neuralContainer && typeof initFuturisticBackground === "function") {
-    initFuturisticBackground(neuralContainer);
-  }
+  // The neural background is supplied as a static image through CSS.
   initRoleTypingAnimation();
 });

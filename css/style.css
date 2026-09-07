@@ -37,6 +37,29 @@ body {
   line-height: 1.7;
 }
 
+/* Full-page floating neural-network canvas. */
+#neural-network-container {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  overflow: hidden;
+  pointer-events: none;
+  background: #020713 url("../assets/ChatGPT Image Sep 7, 2026, 07_34_32 PM.png") center center / cover no-repeat;
+}
+
+#neural-network-container canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+/* Keep the scrollable portfolio content above the decorative canvas. */
+section,
+footer {
+  position: relative;
+  z-index: 1;
+}
+
 body.menu-open {
   overflow: hidden;
 }
@@ -149,7 +172,7 @@ nav {
   position: fixed;
   inset: 0 0 auto;
   width: 100%;
-  padding: 16px 32px;
+  padding: 12px 28px;
   background: var(--bg-nav);
   backdrop-filter: blur(12px);
   border-bottom: 1px solid var(--border-glow);
@@ -157,7 +180,7 @@ nav {
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 24px;
+  gap: 18px;
 }
 
 .logo {
@@ -174,13 +197,13 @@ nav ul {
   display: flex;
   justify-content: center;
   align-items: center;
-  gap: 24px;
+  gap: 18px;
 }
 
 nav a {
   color: var(--text-main);
   text-decoration: none;
-  font-size: 1rem;
+  font-size: 0.92rem;
   font-weight: 600;
   letter-spacing: 0.04em;
   transition: color 0.3s ease, text-shadow 0.3s ease;
@@ -196,7 +219,7 @@ nav a:focus-visible {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  padding: 10px 20px;
+  padding: 9px 18px;
   background: linear-gradient(90deg, var(--neon-blue), var(--neon-pink));
   color: #000;
   border-radius: 8px;
@@ -287,7 +310,7 @@ section p,
 
 .hero h1 {
   font-family: 'Orbitron', sans-serif;
-  font-size: clamp(2.25rem, 5.4vw, 4.25rem);
+  font-size: clamp(2rem, 4.5vw, 3.75rem);
   line-height: 1.1;
   margin-bottom: 18px;
   text-align: justify;
@@ -319,7 +342,7 @@ section p,
 
 .hero h2 {
   color: var(--neon-purple);
-  font-size: clamp(1.2rem, 3vw, 1.8rem);
+  font-size: clamp(1.1rem, 2.3vw, 1.55rem);
   margin-bottom: 18px;
   text-align: justify;
   min-height: 2.2rem; /* Prevents layout jump during typing animation */
@@ -345,7 +368,7 @@ section p,
 .hero p {
   text-align: justify;
   max-width: 700px;
-  font-size: clamp(1rem, 2.5vw, 1.15rem);
+  font-size: clamp(1rem, 2vw, 1.08rem);
 }
 
 .hero-copy {
@@ -358,7 +381,7 @@ section p,
 .hero-profile-card-container {
   position: relative;
   width: min(100%, 480px);
-  min-height: 600px;
+  min-height: 520px;
   justify-self: end;
   display: flex;
   align-items: center;
@@ -366,10 +389,10 @@ section p,
 }
 
 .hero-profile-card {
-  width: 430px;
-  min-height: 500px;
+  width: 360px;
+  min-height: 430px;
   background: var(--bg-card);
-  border-radius: 32px;
+  border-radius: 24px;
   border: 1px solid var(--border-glow);
   display: flex;
   flex-direction: column;
@@ -380,6 +403,113 @@ section p,
   box-shadow: var(--shadow-main);
   transform: translateY(-40px); /* Adjust this value to move the card up */
   transition: transform 0.3s ease;
+  animation: profile-card-float 5.5s ease-in-out infinite;
+}
+
+@media (min-width: 1100px) {
+  .hero {
+    min-height: 88vh;
+    padding-top: 72px;
+    gap: 24px;
+  }
+
+  .hero h1 {
+    font-size: clamp(1.9rem, 3.7vw, 3.15rem);
+    margin-bottom: 14px;
+  }
+
+  .hero h2 {
+    font-size: clamp(1rem, 1.8vw, 1.28rem);
+    margin-bottom: 14px;
+  }
+
+  .hero p {
+    font-size: 1rem;
+  }
+
+  .cta {
+    margin-top: 24px;
+  }
+
+  .stats {
+    margin-top: 32px;
+    width: min(100%, 620px);
+    gap: 14px;
+  }
+
+  .stats div {
+    padding: 15px 14px;
+    border-radius: 14px;
+  }
+
+  .hero-profile-card-container {
+    min-height: 440px;
+  }
+
+  .hero-profile-card {
+    width: 310px;
+    min-height: 370px;
+    padding: 28px;
+  }
+
+  .hero-profile-image {
+    width: 135px;
+    height: 135px;
+    margin-bottom: 18px;
+  }
+}
+
+@keyframes profile-card-float {
+  0%, 100% {
+    transform: translateY(-40px);
+    box-shadow: 0 0 45px rgba(0, 234, 255, 0.18);
+  }
+
+  50% {
+    transform: translateY(-56px);
+    box-shadow: 0 0 62px rgba(0, 234, 255, 0.3);
+  }
+}
+
+.profile-skill-tag {
+  position: absolute;
+  z-index: 2;
+  min-width: 128px;
+  min-height: 48px;
+  padding: 11px 16px;
+  border: 1px solid rgba(0, 234, 255, 0.78);
+  border-radius: 6px;
+  background: rgba(5, 16, 40, 0.88);
+  color: #bffaff;
+  font-family: 'Orbitron', sans-serif;
+  font-size: 0.82rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  white-space: nowrap;
+  opacity: 1;
+  box-shadow: 0 0 15px rgba(0, 234, 255, 0.18);
+  pointer-events: none;
+  transition: opacity 0.25s ease, transform 0.25s ease;
+}
+
+.profile-skill-tag-ai {
+  top: 82px;
+  left: -92px;
+  transform: translateX(0);
+}
+
+.profile-skill-tag-nlp {
+  right: -68px;
+  bottom: 94px;
+  border-color: rgba(191, 96, 255, 0.8);
+  color: #ebc8ff;
+  transform: translateX(0);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hero-profile-card {
+    animation: none;
+  }
 }
 
 .hero-profile-image {
@@ -544,6 +674,37 @@ section p,
   border-radius: 16px;
 }
 
+.stat-card {
+  position: relative;
+  overflow: hidden;
+}
+
+.stat-card::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(120deg, transparent 28%, rgba(0, 234, 255, 0.12) 50%, transparent 72%);
+  transform: translateX(-120%);
+  transition: transform 0.5s ease;
+}
+
+.stat-card:hover::after {
+  transform: translateX(120%);
+}
+
+.stat-icon {
+  display: block;
+  width: 28px;
+  height: 28px;
+  margin-bottom: 10px;
+  fill: none;
+  stroke: var(--neon-blue);
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 1.65;
+  filter: drop-shadow(0 0 6px rgba(0, 234, 255, 0.8));
+}
+
 .stats strong {
   display: block;
   font-size: 1.5rem;
@@ -556,9 +717,10 @@ section p,
 
 .internship {
   margin-top: 28px;
-  color: var(--neon-blue);
+  color: #00eaff;
   font-weight: 600;
   text-align: left;
+  text-shadow: 0 0 10px rgba(0, 234, 255, 0.55);
 }
 
 #about p + p,

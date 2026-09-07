@@ -15,16 +15,6 @@
   />
 
   <link rel="stylesheet" href="css/style.css" />
-  <style>
-    #neural-network-container {
-      position: fixed;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
-      z-index: -1;
-    }
-  </style>
 </head>
 
 <body class="dark loading">
@@ -90,8 +80,9 @@
       <li><a href="#hackathons">Hackathons</a></li>
       <li><a href="#activities">Activities</a></li>
       <li><a href="#experience">Journey</a></li>
-      <li><a href="#contact">Contact</a></li>
       <li><a href="#work-experience">Work Experience</a></li>
+      <li><a href="#contact">Contact</a></li>
+
     </ul>
   </nav>
 
@@ -117,9 +108,25 @@
       </div>
 
       <div class="stats">
-        <div><strong>8.2</strong><span>CGPA</span></div>
-        <div><strong>4+</strong><span>Projects</span></div>
-        <div><strong>80+</strong><span>LeetCode Problems</span></div>
+        <div class="stat-card">
+          <svg class="stat-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M2.5 9.5 12 4l9.5 5.5L12 15 2.5 9.5Z"/><path d="M6.5 12v4.1c2.9 2.5 8.1 2.5 11 0V12"/><path d="M21.5 10v5"/></svg>
+          <strong>8.2</strong><span>CGPA</span>
+        </div>
+        <div class="stat-card">
+          <svg class="stat-icon" viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M9 18h6M10 22h4M8.1 14.2A6 6 0 1 1 15.9 14.2c-.9.8-1.4 1.7-1.5 2.8h-4.8c-.1-1.1-.6-2-1.5-2.8Z" />
+            <path d="M12 .5v2.8M4.6 4.6l1.6 1.6M19.4 4.6l-1.6 1.6M1.5 12h2.2M22.5 12h-2.2M4.6 19.4l1.6-1.6M19.4 19.4l-1.6-1.6" />
+          </svg>
+          <strong>4+</strong><span>Projects</span>
+        </div>
+        <div class="stat-card">
+          <svg class="stat-icon" viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M12 5a3 3 0 1 0-5.8 1A4.1 4.1 0 0 0 4 13.2a4 4 0 0 0 2.7 6.5A3.9 3.9 0 0 0 12 20" />
+            <path d="M12 5a3 3 0 1 1 5.8 1A4.1 4.1 0 0 1 20 13.2a4 4 0 0 1-2.7 6.5A3.9 3.9 0 0 1 12 20M12 5v15" />
+            <path d="M8.1 10.1h2.1l1.8 2 1.8-2h2.1M7.7 15.5h2.5l1.8-1.8 1.8 1.8h2.5" />
+          </svg>
+          <strong>80+</strong><span>LeetCode Problems</span>
+        </div>
       </div>
 
       <p class="internship">Actively seeking AI / ML internship opportunities</p>
@@ -129,6 +136,8 @@
       <div class="floating-badge badge-top">💡 MSME Finalist 2025</div>
 
       <div class="hero-profile-card">
+        <span class="profile-skill-tag profile-skill-tag-ai">AI Systems</span>
+        <span class="profile-skill-tag profile-skill-tag-nlp">NLP</span>
         <div class="hero-profile-image">
           <img alt="Srivatsankith" />
         </div>
